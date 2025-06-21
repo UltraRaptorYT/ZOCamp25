@@ -84,9 +84,9 @@ export default function AddScore({ isAdmin = false }: { isAdmin?: boolean }) {
             await getCurrentPoints();
           }
         }
-      );
+      )
+      .subscribe();
 
-    channel.subscribe();
     getTeamName();
 
     // Clean up to avoid duplicate subscriptions
@@ -110,7 +110,7 @@ export default function AddScore({ isAdmin = false }: { isAdmin?: boolean }) {
       console.log(error);
       return error;
     }
-    setScore((prevScore) => prevScore + scoreToAdd);
+    // setScore((prevScore) => prevScore + scoreToAdd);
     await getCurrentPoints();
     setRemarks("");
   }

@@ -52,56 +52,61 @@ export default function Scoreboard({
       return;
     }
     console.log(frozenTime, "HI");
-    async function getTeamName() {
-      const { data, error } = await supabase
-        .from("zo_camp_25_team")
-        .select("*")
-        .order("team_name", { ascending: true });
-      if (error) {
-        console.log(error);
-        return;
-      }
-      return data;
-    }
 
-    async function getLeaderboard() {
-      let teamName = await getTeamName();
-      if (!teamName) {
-        return "ERROR";
-      }
-      const { data, error } = await supabase.from("zo_camp_25_score").select();
-      if (error) {
-        console.log(error);
-        return error;
-      }
-      let scoreData = [...data];
-      console.log(scoreData, "hi");
-      if (isFrozen) {
-        scoreData = scoreData.filter((e) => {
-          return new Date(e.created_at) <= new Date(frozenTime);
-        });
-        console.log("FROZEN");
-        console.log(scoreData, frozenTime);
-      }
-      for (const score of scoreData) {
-        const team = teamName.find((e) => e.id === score.team_id);
-
-        if (!team) continue;
-
-        team.score = (team.score || 0) + (score.score || 0);
-      }
-
-      console.log(teamName);
-      let newData = teamName.map((e) => {
-        if (!("score" in e)) {
-          e.score = 0;
-        }
-        return e;
-      });
-      newData.sort((a, b) => b.score - a.score);
-      setLeaderboard(newData);
-    }
     getLeaderboard();
+  }, [frozenTime]);
+
+  async function getTeamName() {
+    const { data, error } = await supabase
+      .from("zo_camp_25_team")
+      .select("*")
+      .order("team_name", { ascending: true });
+    if (error) {
+      console.log(error);
+      return;
+    }
+    return data;
+  }
+
+  async function getLeaderboard() {
+    let teamName = await getTeamName();
+    if (!teamName) {
+      return "ERROR";
+    }
+    const { data, error } = await supabase.from("zo_camp_25_score").select();
+    if (error) {
+      console.log(error);
+      return error;
+    }
+    let scoreData = [...data];
+    console.log(scoreData, "hi");
+    if (isFrozen) {
+      scoreData = scoreData.filter((e) => {
+        return new Date(e.created_at) <= new Date(frozenTime);
+      });
+      console.log("FROZEN");
+      console.log(scoreData, frozenTime);
+    }
+    for (const score of scoreData) {
+      const team = teamName.find((e) => e.id === score.team_id);
+
+      if (!team) continue;
+
+      team.score = (team.score || 0) + (score.score || 0);
+    }
+
+    console.log(teamName);
+    let newData = teamName.map((e) => {
+      if (!("score" in e)) {
+        e.score = 0;
+      }
+      return e;
+    });
+    newData.sort((a, b) => b.score - a.score);
+    setLeaderboard(newData);
+  }
+
+  useEffect(() => {
     const channel = supabase
       .channel("custom-all-channel")
       .on(
@@ -112,24 +117,15 @@ export default function Scoreboard({
           await getLeaderboard();
         }
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "zest_state" },
-        async (payload) => {
-          console.log("State change received!", payload);
-          await getFrozenState();
-        }
-      );
-
-    channel.subscribe((status) => {
-      console.log("Subscription status:", status);
-    });
+      .subscribe();
+    console.log("HELLO");
+    getLeaderboard();
 
     // Clean up to avoid duplicate subscriptions
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [frozenTime]);
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-center">
@@ -156,19 +152,11 @@ export default function Scoreboard({
       <div className="flex flex-col items-center w-full gap-6 mt-6 px-4">
         {leaderboard.map((team, idx) => {
           // Determine border color based on rank
-          const borderColor =
-            idx === 0
-              ? "border-yellow-400"
-              : idx === 1
-              ? "border-sky-300"
-              : idx === 2
-              ? "border-orange-300"
-              : "border-gray-500";
 
           return (
             <div
               key={team.team_name}
-              className={`w-full max-w-md flex items-center justify-between px-4 py-3 rounded-xl border-4 ${borderColor}`}
+              className={`w-full max-w-md flex items-center justify-between px-4 py-3 rounded-xl`}
               style={{ backgroundColor: team.color }}
             >
               {/* Rank Badge */}
